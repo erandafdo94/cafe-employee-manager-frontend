@@ -69,6 +69,7 @@ const EditCafePage: React.FC = () => {
     },
   });
 
+  // Show loading state while fetching data
   if (!initialValues) {
     return <Box sx={{ p: 3 }}>Loading...</Box>;
   }
