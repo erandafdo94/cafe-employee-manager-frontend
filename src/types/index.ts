@@ -41,3 +41,10 @@ export interface ApiResponse<T> {
   success: boolean;
 }
 
+export interface UpdateCafeCommand {
+  id?: string; // Optional since it's set by backend
+  name: string;
+  description: string;
+  location: string;
+  logo: string;
+}

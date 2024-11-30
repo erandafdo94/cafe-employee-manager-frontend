@@ -1,5 +1,5 @@
 // src/services/cafeService.ts
-import { ApiResponse, Cafe } from "../types";
+import { ApiResponse, Cafe, UpdateCafeCommand } from "../types";
 import api from "./api";
 
 export const cafeService = {
@@ -15,9 +15,11 @@ export const cafeService = {
     }
   },
 
+  // In cafeService.ts
   getById: async (id: string): Promise<Cafe> => {
-    const { data } = await api.get<ApiResponse<Cafe>>(`/cafe/${id}`);
-    return data.data;
+    const { data } = await api.get<Cafe>(`/cafe/${id}`);
+    // Remove the nested .data access since the cafe data is directly in response.data
+    return data;
   },
 
   create: async (
@@ -30,17 +32,15 @@ export const cafeService = {
     return data.data;
   },
 
-  update: async (id: string, cafeData: any): Promise<Cafe> => {
+  update: async (id: string, cafeData: UpdateCafeCommand): Promise<boolean> => {
     const updateData = {
       ...cafeData,
       logo: "string",
     };
 
-    const { data } = await api.put<ApiResponse<Cafe>>(
-      `/cafe/${id}`,
-      updateData
-    );
-    return data.data;
+    // Changed from `/cafe/${id}` to `/cafe?id=${id}`
+    const { data } = await api.put<boolean>(`/cafe?id=${id}`, updateData);
+    return data;
   },
 
   delete: async (id: string): Promise<void> => {

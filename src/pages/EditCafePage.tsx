@@ -31,18 +31,36 @@ const EditCafePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [error, setError] = useState<string | null>(null);
   const [initialValues, setInitialValues] = useState<Cafe | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchCafe = async () => {
       try {
-        if (id) {
-          const cafe = await cafeService.getById(id);
-          setInitialValues(cafe);
+        setIsLoading(true);
+        if (!id) {
+          setError("No cafe ID provided");
+          setIsLoading(false);
+          return;
         }
+
+        const response = await cafeService.getById(id);
+        console.log("API Response:", response);
+
+        if (!response) {
+          setError("No cafe data received");
+          setIsLoading(false);
+          return;
+        }
+
+        setInitialValues(response);
       } catch (error) {
+        console.error("Error fetching cafe:", error);
         setError("Failed to fetch cafe details");
+      } finally {
+        setIsLoading(false);
       }
     };
+
     fetchCafe();
   }, [id]);
 
@@ -56,22 +74,57 @@ const EditCafePage: React.FC = () => {
     enableReinitialize: true,
     onSubmit: async (values) => {
       try {
-        if (id) {
-          await cafeService.update(id, {
-            ...values,
-            logo: "string",
-          });
-          navigate("/cafes");
+        setError(null); // Clear any previous errors
+
+        if (!id) {
+          setError("No cafe ID available");
+          return;
         }
-      } catch (error) {
-        setError("Failed to update cafe");
+
+        await cafeService.update(id, {
+          ...values,
+          logo: "string", // Include any required fields
+        });
+
+        // If we get here, the update was successful
+        navigate("/cafes");
+      } catch (error: any) {
+        // Type as 'any' to access error properties
+        console.error("Error updating cafe:", error);
+
+        // Handle different types of errors
+        if (error.response) {
+          // Server responded with an error
+          if (error.response.status === 404) {
+            setError("Cafe not found");
+          } else if (error.response.status === 400) {
+            setError("Invalid cafe data");
+          } else {
+            setError(
+              `Failed to update cafe: ${error.response.data || "Unknown error"}`
+            );
+          }
+        } else if (error.request) {
+          // Request was made but no response
+          setError("No response from server");
+        } else {
+          // Something else went wrong
+          setError("Failed to update cafe");
+        }
       }
     },
   });
 
-  // Show loading state while fetching data
-  if (!initialValues) {
+  if (isLoading) {
     return <Box sx={{ p: 3 }}>Loading...</Box>;
+  }
+
+  if (error) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <Alert severity="error">{error}</Alert>
+      </Box>
+    );
   }
 
   const handleCancel = () => {
@@ -94,11 +147,6 @@ const EditCafePage: React.FC = () => {
         <Typography variant="h5" gutterBottom>
           Edit Café
         </Typography>
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
-          </Alert>
-        )}
 
         <form onSubmit={formik.handleSubmit}>
           <TextField
